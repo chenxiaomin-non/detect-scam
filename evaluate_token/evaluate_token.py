@@ -7,11 +7,13 @@ import get_info_interface as get_info
 def get_latest_result(token_address: str = None, name: str = None, symbol: str = None):
     data = None
     if token_address != None:
-        data = total_token.find_by_address(token_address)
+        data = total_token.find('address', token_address)
     if name != None:
-        data = total_token.find_by_name(name)
+        data = total_token.find('name', name)
     if symbol != None:
-        data = total_token.find_by_symbol(symbol)
+        data = total_token.find('symbol', symbol)
+    print('data: ',data)
+    total_token.clear_result()
     return data
 
 def jsonify_latest_result(result: tuple):
@@ -23,15 +25,48 @@ def jsonify_latest_result(result: tuple):
         'token_name': result[0],
         'token_address': result[1],
         'symbol': result[2],
-        'category': result[3][0],
-        'possibility': int(result[3][1:]),
-        'timestamp': result[4]
+        'chain': result[3],
+        'category': result[4][0],
+        'possibility': int(result[4][1:]),
+        'timestamp': result[5]
     }
+    if return_value['category'] == '0':
+        return_value['category'] = 'no value token'
+    elif return_value['category'] == '1':
+        return_value['category'] = 'simple scam token'
+    elif return_value['category'] == '2':
+        return_value['category'] = 'complex scam token'
+    else:
+        return_value['category'] = 'an OK token'
     return return_value
+
+def save_result(result, data):
+    # if result['category'] == 'simple scam token':
+    #     result['category'] = '1'
+    # elif result['category'] == 'complex scam token':
+    #     result['category'] = '2'
+    # elif result['category'] == 'no value token':
+    #     result['category'] = '0'
+    # else:
+    #     result['category'] = '3'
+    if result['status'] == 'OK':
+        result['category'] = '3'
+        result['possibility'] = 0
+    else:
+        result['category'] = '0'
+        result['possibility'] = 100
+    total_token.insert_processed_data({
+        "token_name": data['name'],
+        "token_address": data['token_address'],
+        "symbol": data['symbol'],
+        "chain": data['moralis']['chain'],
+        "lastest_result": result['category'] +str(result['possibility'])
+    })
 
 
 def evaluate_token(token_address: str = None, name: str = None, symbol: str = None):
     data = get_latest_result(token_address, name, symbol)
+    print('data: ',data)
     data = jsonify_latest_result(data)
 
     if data == None:
@@ -48,8 +83,9 @@ def evaluate_token(token_address: str = None, name: str = None, symbol: str = No
         """
         # stage 01: check no value token
         result = validator.evaluate(data)
-
+        print('result: ', result)
         if result['status'] != 'OK':
+            save_result(result, data)
             return {
                 'token_name': data['name'],
                 'token_address': data['token_address'],
@@ -58,6 +94,15 @@ def evaluate_token(token_address: str = None, name: str = None, symbol: str = No
                 'possibility': 100
             }
         
+        else:
+            save_result(result, data)
+            return {
+                'token_name': data['name'],
+                'token_address': data['token_address'],
+                'symbol': data['symbol'],
+                'category': 'an OK token',
+                'possibility': 0
+            }
         # stage 02: check simple scam token
 
         """
@@ -70,5 +115,12 @@ def evaluate_token(token_address: str = None, name: str = None, symbol: str = No
         there will be some code here in future
         """
 
+        #4 save to database
+        
+
+
+
     else:
         return data, 'OK'
+    
+

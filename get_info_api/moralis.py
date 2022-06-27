@@ -87,8 +87,9 @@ def call_contract_function(token_address: str, function_name: str,
         'params' : {}
     }
     url = 'https://deep-index.moralis.io/api/v2/%s/function' %token_address
-    response = requests.post(url=url, data=json_data, headers=headers, params=params)
-    if response.json['message'] is not None:
+    response = requests.post(url=url, data=json_data, headers=headers, params=params).json()
+    print(response)
+    if response.get('message') is not None:
         return None
     return response
 

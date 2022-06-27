@@ -36,7 +36,7 @@ def get_transaction_info(token_address: str):
         'm': 'normal',
         'contractAddress': token_address,
         'a': '',
-        'sid': 'bf11ccdf0bed7fe62a1d1ed2be7563c6',
+        'sid': '2fd351ebeb2ccade1ecd51653dd7de83',
         'p': '1',
     }
 
@@ -44,30 +44,47 @@ def get_transaction_info(token_address: str):
     soup = BeautifulSoup(response.text, 'html.parser')
     useful_string = soup.find('p').text.strip().removeprefix('A total of ') \
             .removesuffix('transactions found')
-    return int(useful_string)
+    try:
+        result = int(useful_string)
+    except ValueError:
+        result = -1
+    return result
 
-def get_info_from_ETH(token_address: str):
+def get_info_from_ETH(token_address: str, known_info: dict):
     url = 'https://etherscan.io/token/'
     
     response = requests.get(url + token_address, headers=headers, cookies=cookies).text
     soup = BeautifulSoup(response, 'html.parser')
 
-    token_name = soup.find('div', attrs={'class': 'container py-3'}) \
-                        .find('h1').text.strip().removeprefix('Token ')
-    token_name = str(token_name)
+    if known_info['name'] is None:
+        token_name = soup.find('div', attrs={'class': 'container py-3'}) \
+                            .find('h1').text.strip().removeprefix('Token ')
+        token_name = str(token_name)
+    else: 
+        token_name = known_info['name']
     
+
     token_info = soup.find('div', attrs={'class': 'card-body'})
 
-    total_token = token_info.find('div', attrs={'class': 'row align-items-center'}) \
-            .find('div', attrs={'class': 'col-md-8 font-weight-medium'})
-    total_token_num = total_token.find('span').text
-    token_symbol = str(total_token.text.replace(total_token_num, '').strip())
-    total_token_num = int(total_token_num.strip().replace(',', ''))
+    if known_info['symbol'] is None:
+        token_symbol = str(total_token.text.replace(total_token_num, '').strip())
+    else:
+        token_symbol = known_info['symbol']
+    if known_info['total_supply'] is None:
+        total_token = token_info.find('div', attrs={'class': 'row align-items-center'}) \
+                .find('div', attrs={'class': 'col-md-8 font-weight-medium'})
+        total_token_num = total_token.find('span').text
+        total_token_num = int(total_token_num.strip().replace(',', ''))
+    else:
+        total_token_num = known_info['total_supply']
     token_holder = token_info.find('div', attrs={'id': 'ContentPlaceHolder1_tr_tokenHolders'}) \
-            .find('div', attrs={'class': 'col-md-8'}).text.strip().replace('addresses', '')
+            .find('div', attrs={'class': 'col-md-8'}).text.strip().replace('addresses', '').replace(',', '')
+    if token_holder.find('(') != -1:
+        token_holder = token_holder.split('(')[0]
     token_holder = int(token_holder)
 
-    token_transaction = get_transaction_info(token_address)
+    token_transaction = get_transaction_info(token_address)    
+
     return ('eth', token_name, token_symbol, total_token_num, token_holder, token_transaction)
     {
         "chain": "eth",

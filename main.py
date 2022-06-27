@@ -16,13 +16,13 @@ def validate_input(token_address: str):
         return False
     if len(token_address) != 42:
         return False
-    for i in range(len(2, token_address)):
+    for i in range(2, len(token_address)):
         if token_address[i] not in '1234567890abcdefABCDEF':
             return False
     return True
 
-# input: /address/0x1234567890123456789012345678901234567890
 
+# input: /address/0x1234567890123456789012345678901234567890
 
 @app.get("/address/{token_address}")
 async def is_scam(token_address: str):
@@ -40,6 +40,7 @@ async def is_scam(token_address: str):
 
     # get the result from evaluate_token
     result = evaluate_token.evaluate_token(token_address)
+
 
     #
     # this above code just process for ETH/BSC/BNB token address

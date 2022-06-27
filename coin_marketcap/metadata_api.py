@@ -24,6 +24,10 @@ def get_token_price_from_cmc():
         if len(response['data']) == 0:
             return None
         return response['data']
+
+    # print(json.dumps(get_info_from_cmc(1,5), indent=4))
+    
+
     result_list = []
     error_code = 0
     start = 1
@@ -36,7 +40,8 @@ def get_token_price_from_cmc():
         else:
             error_code = 1
     return result_list
-
+    
+# get_token_price_from_cmc()
 # get metadata of the token -> fill to the database
 # json: id, rank, name, symbol, slug, cmc_rank, is_active,
 #       first_historical_data, last_historical_data, platform, token_address
@@ -59,7 +64,6 @@ def get_metadata_from_cmc_(start: int, limit: int, listing_status: str = 'active
 
     return response['data']
 
-print(json.dumps(get_metadata_from_cmc_(1,1, 'inactive'), indent=4))
 
 def get_metadata_from_cmc(listing_status: str = 'active'):
     result_list = []

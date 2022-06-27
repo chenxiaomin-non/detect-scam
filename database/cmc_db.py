@@ -8,7 +8,17 @@ sys.path.append('./')
 
 DB_IN_USED = 'cmc_token2'
 loop = asyncio.get_event_loop()
+
+db_info = json.load(open('./database/config.json'))
+HOST = db_info['general']['host']
+USER = db_info['general']['user']
+PASSWORD = db_info['general']['password']
+UNIX_SOCKET = db_info['general']['unix_socket']
+PORT = db_info['general']['port']
+
+# this variable is used to store the result of the query
 result = None
+
 
 #########################################################################
 # get the async connection to the database
@@ -20,10 +30,12 @@ async def get_connection_to_database(loop):
 
     # Connect to the database
     connection = await aiomysql.connect(
-        host='localhost',
-        user='root',
-        password='wewemaylalong2A!',
-        loop=loop,
+        host=HOST, 
+        port=PORT,
+        user=USER, 
+        password=PASSWORD,  
+        loop=loop, 
+        unix_socket=UNIX_SOCKET
     )
     async with connection.cursor() as cursor:
         await cursor.execute("CREATE DATABASE IF NOT EXISTS %s" % (DB_IN_USED,))
@@ -38,11 +50,13 @@ async def get_connection_to_database(loop):
 
 async def get_pool_connection(loop):
     pool = await aiomysql.create_pool(
-        host='localhost',
-        user='root',
-        password='wewemaylalong2A!',
-        loop=loop,
-        db='%s' % (DB_IN_USED,),
+        host=HOST, 
+        port=PORT,
+        user=USER, 
+        password=PASSWORD,  
+        loop=loop, 
+        unix_socket=UNIX_SOCKET,
+        db=DB_IN_USED
     )
 
     return pool
@@ -63,7 +77,7 @@ async def cmc_init_database(loop, name=''):
         await cursor.execute("DROP TABLE IF EXISTS cmc_metadata;")
         await cursor.execute("DROP TABLE IF EXISTS cmc_price;")
         await cursor.execute('''
-            CREATE TABLE %scmc_metadata (
+            CREATE TABLE cmc_metadata (
                 id INT PRIMARY KEY, 
                 name VARCHAR(255), 
                 symbol VARCHAR(255), 
@@ -75,14 +89,14 @@ async def cmc_init_database(loop, name=''):
                 platform INT,
                 token_address VARCHAR(255)
                 )
-            ''' % (name,))
+            ''')
         await cursor.execute('''
-            CREATE TABLE %scmc_price (
+            CREATE TABLE cmc_price (
                 id INT PRIMARY KEY,
                 num_market_pair INT,
-                circulating_supply INT,
-                total_supply INT,
-                max_supply INT,
+                circulating_supply BIGINT,
+                total_supply BIGINT,
+                max_supply BIGINT,
                 last_updated VARCHAR(255),
                 date_added VARCHAR(255),
                 usd_price FLOAT,
@@ -92,24 +106,11 @@ async def cmc_init_database(loop, name=''):
                 percent_change_7d FLOAT,
                 market_cap FLOAT,
                 fully_diluted_market_cap FLOAT
-            )''' % (name, ))
+            )''')
         await con.commit()
 
     con.close()
 
-
-async def call_fill_to_metadata(loop):
-    packet_of_data = cmc_api.get_active_token_metadata()
-    loop.run_until_complete(fill_to_metadata(loop, packet_of_data))
-    print('Completed filling to metadata: active token')
-
-    packet_of_data = cmc_api.get_inactive_token_metadata()
-    loop.run_until_complete(fill_to_metadata(loop, packet_of_data))
-    print('Completed filling to metadata: inactive token')
-
-    packet_of_data = cmc_api.get_untracked_token_metadata()
-    loop.run_until_complete(fill_to_metadata(loop, packet_of_data))
-    print('Completed filling to metadata: untracked token')
 
 # fill data from the API to the database
 
@@ -129,7 +130,7 @@ async def fill_to_metadata(loop, data: list, db_name: str = 'cmc_metadata'):
             slug = token['slug']
             cmc_rank = token['rank']
             is_active = token['is_active']
-            try: 
+            try:
                 first_historical_data = token['first_historical_data']
                 last_historical_data = token['last_historical_data']
             except Exception:
@@ -144,7 +145,7 @@ async def fill_to_metadata(loop, data: list, db_name: str = 'cmc_metadata'):
 
             # Insert the data into the database
             await cursor.execute('''
-                INSERT INTO '''+ db_name +''' VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s);''',
+                INSERT INTO ''' + db_name + ''' VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s);''',
                                  (id, name, symbol, slug, cmc_rank, is_active,
                                   first_historical_data, last_historical_data, platform, token_address,))
             print('Insert %s %s %s' % (id, name, symbol))
@@ -179,10 +180,10 @@ async def fill_to_price(loop, db_name='cmc_price'):
             fully_diluted_market_cap = token['quote']['USD']['fully_diluted_market_cap']
             # Insert the data into the database
             await cursor.execute('''
-                INSERT INTO ''' + db_name + ''' VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)''', (db_name, id, num_market_pair, circulating_supply, total_supply, max_supply, last_updated, date_added,
-                                                                                                             float(usd_price), float(usd_volume_24h), float(
-                                                                                                                 percent_change_1h), float(percent_change_24h),
-                                                                                                             float(percent_change_7d), float(market_cap), float(fully_diluted_market_cap),))
+                INSERT INTO ''' + db_name + ''' VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)''', 
+                (id, num_market_pair, circulating_supply, total_supply, max_supply, last_updated, date_added,
+                float(usd_price), float(usd_volume_24h), float(percent_change_1h), float(percent_change_24h),
+                float(percent_change_7d), float(market_cap), float(fully_diluted_market_cap),))
             await con.commit()
     pool.close()
     await pool.wait_closed()
@@ -191,7 +192,7 @@ async def fill_to_price(loop, db_name='cmc_price'):
 # return something based on the params
 
 
-async def get_metadata(loop, id='', token_address: str = '', name: str = '', symbol: str = ''):
+async def get_metadata(loop, id=None, token_address: str = None, name: str = None, symbol: str = None):
     global result
     con = await get_connection_to_database(loop)
     async with con.cursor() as cursor:
@@ -252,6 +253,14 @@ async def change_name(loop):
         await con.commit()
     con.close()
 
+async def update_init():
+    con = get_connection_to_database(loop)
+    async with con.cursor() as cursor:
+        await cursor.execute('''
+        CREATE TABLE new_cmc_metadata LIKE cmc_metadata;
+        CREATE TABLE new_cmc_price LIKE cmc_price;''')
+        await con.commit()
+    con.close()
 
 async def backup(loop, db: list):
     con = get_connection_to_database(loop)

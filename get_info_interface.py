@@ -1,3 +1,4 @@
+import json
 import crawl_data_api.crawl_from_eth_token as eth_crawl
 import crawl_data_api.crawl_from_bsc_token as bsc_crawl
 import get_info_api.metadata_eth as _eth
@@ -39,22 +40,22 @@ def jsonify_result(result, kind: str):
     result_json = {}
     if kind == 'metadata':
         for i in range(len(result)):
-            result_json[METADATA_FIELDS[i]] = result[i]
+            result_json.update({METADATA_FIELDS[i]: result[i]})
     if kind == 'price':
         for i in range(len(result)):
-            result_json[PRICE_FIELDS[i]] = result[i]
+            result_json.update({PRICE_FIELDS[i]: result[i]})
     if kind == 'bsc':
         for i in range(len(result)):
-            result_json[BSC_FIELDS[i]] = result[i]
+            result_json.update({BSC_FIELDS[i]: result[i]})
     if kind == 'eth':
         for i in range(len(result)):
-            result_json[ETH_FIELDS[i]] = result[i]
+            result_json.update({ETH_FIELDS[i]: result[i]})
     if kind == 'more_info':
         for i in range(len(result)):
-            result_json[MORE_INFO_FIELDS[i]] = result[i]
+            result_json.update({MORE_INFO_FIELDS[i]: result[i]})
     if kind == 'moralis':
         for i in range(len(result)):
-            result_json[MORALIS_FIELDS[i]] = result[i]
+            result_json.update({MORALIS_FIELDS[i]: result[i]})
     return result_json
 
 
@@ -71,7 +72,11 @@ def get_info_for_validator(token_address: str = None, name: str = None, symbol: 
         loop = cmc_db.loop
         loop.run_until_complete(cmc_db.get_metadata(
             loop, token_address=token_address, name=name, symbol=symbol))
-        database_result = jsonify_result(cmc_db.get_result, 'metadata')
+        database_result = jsonify_result(cmc_db.get_result()[0], 'metadata')
+        id = database_result['id']
+        cmc_db.clear_result()
+        loop.run_until_complete(cmc_db.get_price(loop, id))
+        database_result.update(jsonify_result(cmc_db.get_result()[0], 'price'))
         cmc_db.clear_result()
         return database_result
 
@@ -83,7 +88,7 @@ def get_info_for_validator(token_address: str = None, name: str = None, symbol: 
             return False
         if len(token_address) != 42:
             return False
-        for i in range(len(token_address)):
+        for i in range(2, len(token_address)):
             if token_address[i] not in '1234567890abcdefABCDEF':
                 return False
         return True
@@ -97,9 +102,9 @@ def get_info_for_validator(token_address: str = None, name: str = None, symbol: 
         return bsc_data.update(more_info)
 
     # step 3: find in eth scan
-    def get_eth_info(token_address: str):
+    def get_eth_info(token_address: str, known_info: dict):
         eth_data = jsonify_result(
-            eth_crawl.get_info_from_ETH(token_address), 'eth')
+            eth_crawl.get_info_from_ETH(token_address, known_info), 'eth')
         more_info = jsonify_result(
             _eth.get_more_info_from_eth(token_address), 'more_info')
         return eth_data.update(more_info)
@@ -110,21 +115,20 @@ def get_info_for_validator(token_address: str = None, name: str = None, symbol: 
             moralis.get_moralis_metadata_erc20(token_address), 'moralis')
         return moralis_data
 
-    result['cmc_metadata'] = jsonify_result(
-        find_in_database(token_address, name, symbol), 'metadata')
+    result['cmc_metadata'] = find_in_database(token_address, name, symbol)
     result['name'] = result['cmc_metadata']['name']
     result['symbol'] = result['cmc_metadata']['symbol']
     result['token_address'] = result['cmc_metadata']['token_address']
 
     if result['token_address'] is not None and is_valid_eth_or_bsc_token(result['token_address']):
-        result['moralis'] = jsonify_result(
-            get_moralis_info(token_address), 'moralis')
+        result['moralis'] = get_moralis_info(token_address)
         chain = result['moralis']['chain']
         if chain == 'bsc':
             result['bsc'] = get_bsc_info(token_address)
         elif chain == 'eth':
-            result['eth'] = get_eth_info(token_address)
+            result['eth'] = get_eth_info(token_address, result['cmc_metadata'])
 
+    print('info_result: \n', json.dumps(result, indent=4))
     return result
 
 
@@ -135,4 +139,4 @@ def get_list_of_transaction(token_address: str = None, name: str = None, chain: 
         return None
 
 
-print(get_info_for_validator('0x0d8775f648430679a709e98d2b0cb6250d2887ef'))
+# print(get_info_for_validator('0x0d8775f648430679a709e98d2b0cb6250d2887ef'))

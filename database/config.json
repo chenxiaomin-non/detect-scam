@@ -1,0 +1,33 @@
+{
+    "general": {
+        "host": "127.0.0.1",
+        "port": 3306,
+        "user": "root",
+        "password": "wewemaylalong2A!",
+        "database": "detect_token_db",
+        "unix_socket": "/var/run/mysqld/mysqld.sock"
+    },
+    "database": {
+        "cmc_token": {
+            "host": "127.0.0.1",
+            "port": 3306,
+            "user": "root",
+            "password": "wewemaylalong2A!",
+            "unix-socket": "/run/mysqld/mysqld.sock"
+        },
+        "cmc_price": {
+            "host": "127.0.0.1",
+            "port": 3306,
+            "user": "root",
+            "password": "wewemaylalong2A!",
+            "unix-socket": "/run/mysqld/mysqld.sock"
+        },
+        "total_token": {
+            "host": "127.0.0.1",
+            "port": 3306,
+            "user": "root",
+            "password": "wewemaylalong2A!",
+            "unix-socket": "/run/mysqld/mysqld.sock"
+        }
+    }
+}

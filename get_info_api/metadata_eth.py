@@ -1,4 +1,7 @@
 import json
+import sys
+sys.path.append('./')
+sys.path.append('./get_info_api')
 import moralis
 import requests
 import crawl_data_api.crawl_from_eth_token as crawl

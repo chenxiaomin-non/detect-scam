@@ -26,7 +26,7 @@ def evaluate(data: dict):
             'status': 'NOT OK',
             'developer_message': 'token_address, name, symbol is required'
         }
-    if data.get('bsc', None) is None and data.get('eth', None) is None:
+    if data.get('moralis').get('chain') != 'eth' and data.get('moralis').get('chain') != 'bsc':
         return {
             'status': 'NOT OK',
             'developer_message': 'bsc or eth is required'
