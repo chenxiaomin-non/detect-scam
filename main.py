@@ -1,3 +1,4 @@
+from unittest import result
 import evaluate_token.evaluate_token as evaluate_token
 import json
 from fastapi import FastAPI
@@ -55,25 +56,17 @@ async def is_scam(token_address: str):
 
 @app.get('/name/{token_name}')
 async def is_scam(token_name: str):
-    if validate_input(token_name) == False:
-        return json.dumps({
-            "status": "ERR",
-            "result": []
-        }, indent=4)
 
     #
     # this code will process the data
     #
 
+    result = evaluate_token.evaluate_token(name=token_name)
+
     return json.dumps({
         "status": "OK",
-        "result": {
-            "token_address": "0x1234567890123456789012345678901234567890",
-            "token_name": "Bitcoin",
-            "symbol": "BTC",
-            "category": "an OK token",
-            "possibility": 20
-        }}, indent=4)
+        "result": result
+        }, indent=4)
 
 
 @app.get('/symbol/{symbol}')

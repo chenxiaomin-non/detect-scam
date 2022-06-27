@@ -129,11 +129,15 @@ def get_info_for_validator(token_address: str = None, name: str = None, symbol: 
 
     if result['token_address'] is not None and is_valid_eth_or_bsc_token(result['token_address']):
         result['moralis'] = get_moralis_info(token_address)
-        chain = result['moralis']['chain']
-        if chain == 'bsc':
-            result['bsc'] = get_bsc_info(token_address)
-        elif chain == 'eth':
-            result['eth'] = get_eth_info(token_address, result['cmc_metadata'])
+        try:
+            chain = result.get('moralis').get('chain')
+        
+            if chain == 'bsc':
+                result['bsc'] = get_bsc_info(token_address)
+            elif chain == 'eth':
+                result['eth'] = get_eth_info(token_address, result['cmc_metadata'])
+        except Exception :
+            pass
 
     print('info_result: \n', json.dumps(result, indent=4))
     return result

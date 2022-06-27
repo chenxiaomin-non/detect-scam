@@ -55,11 +55,15 @@ def save_result(result, data):
     else:
         result['category'] = '0'
         result['possibility'] = 100
+    if data.get('moralis') is None:
+        chain = None
+    else:
+        chain = data['moralis'].get('chain')
     total_token.insert_processed_data({
-        "token_name": data['name'],
-        "token_address": data['token_address'],
-        "symbol": data['symbol'],
-        "chain": data['moralis']['chain'],
+        "token_name": data.get('name', None),
+        "token_address": data.get('token_address', None),
+        "symbol": data.get('symbol', None),
+        "chain": chain,
         "lastest_result": result['category'] +str(result['possibility'])
     })
 
