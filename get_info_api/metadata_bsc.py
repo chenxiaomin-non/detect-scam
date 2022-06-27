@@ -29,7 +29,10 @@ def get_total_circulating_supply(contract_address: str):
         contract_address + '&apikey=' + BSC_KEY
     
     data = requests.get(url).json()['result']
-    return int(data)
+    try:
+        return int(data)
+    except ValueError:
+        return 0
 
 
 # get token account balance from token address & account address
@@ -39,7 +42,10 @@ def get_account_balance(token_address: str, account_address: str):
         '&tag=latest&apikey=' + BSC_KEY
     
     data = requests.get(url).json()['result']
-    return int(data)
+    try:
+        return int(data)
+    except ValueError:
+        return 0
 
 
 # get a list of normal transaction by address

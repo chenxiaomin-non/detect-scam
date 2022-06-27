@@ -72,12 +72,16 @@ def get_info_for_validator(token_address: str = None, name: str = None, symbol: 
         loop = cmc_db.loop
         loop.run_until_complete(cmc_db.get_metadata(
             loop, token_address=token_address, name=name, symbol=symbol))
-        database_result = jsonify_result(cmc_db.get_result()[0], 'metadata')
-        id = database_result['id']
-        cmc_db.clear_result()
-        loop.run_until_complete(cmc_db.get_price(loop, id))
-        database_result.update(jsonify_result(cmc_db.get_result()[0], 'price'))
-        cmc_db.clear_result()
+        
+        try:
+            database_result = jsonify_result(cmc_db.get_result()[0], 'metadata')
+            id = database_result['id']
+            cmc_db.clear_result()
+            loop.run_until_complete(cmc_db.get_price(loop, id))
+            database_result.update(jsonify_result(cmc_db.get_result()[0], 'price'))
+            cmc_db.clear_result()
+        except Exception as e:
+            database_result = {}
         return database_result
 
     # step pre-2,3: check if the token is valid bsc/eth token
@@ -99,7 +103,8 @@ def get_info_for_validator(token_address: str = None, name: str = None, symbol: 
             bsc_crawl.get_info_from_BSC(token_address), 'bsc')
         more_info = jsonify_result(
             _bsc.get_more_info_from_bsc(token_address), 'more_info')
-        return bsc_data.update(more_info)
+        bsc_data.update(more_info)
+        return bsc_data
 
     # step 3: find in eth scan
     def get_eth_info(token_address: str, known_info: dict):
@@ -107,7 +112,8 @@ def get_info_for_validator(token_address: str = None, name: str = None, symbol: 
             eth_crawl.get_info_from_ETH(token_address, known_info), 'eth')
         more_info = jsonify_result(
             _eth.get_more_info_from_eth(token_address), 'more_info')
-        return eth_data.update(more_info)
+        eth_data.update(more_info)
+        return eth_data
 
     # step 4: find in moralis
     def get_moralis_info(token_address: str):
@@ -116,9 +122,10 @@ def get_info_for_validator(token_address: str = None, name: str = None, symbol: 
         return moralis_data
 
     result['cmc_metadata'] = find_in_database(token_address, name, symbol)
-    result['name'] = result['cmc_metadata']['name']
-    result['symbol'] = result['cmc_metadata']['symbol']
-    result['token_address'] = result['cmc_metadata']['token_address']
+    if result['cmc_metadata'] != {}:
+        result['name'] = result['cmc_metadata']['name']
+        result['symbol'] = result['cmc_metadata']['symbol']
+        result['token_address'] = result['cmc_metadata']['token_address']
 
     if result['token_address'] is not None and is_valid_eth_or_bsc_token(result['token_address']):
         result['moralis'] = get_moralis_info(token_address)
