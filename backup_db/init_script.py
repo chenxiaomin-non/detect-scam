@@ -33,13 +33,17 @@ def init_cmc_db():
 # update the coin marketcap db
 def update():
     loop = cmc_db.loop
-
+    print('************************************************************************')
+    print('**              Start updating coin marketcap database                **')
     loop.run_until_complete(cmc_db.update_init(loop))
-
+    print('**              Completed Init phase of db                            **')
     loop.run_until_complete(cmc_db.fill_to_metadata(loop, name='new_cmc_metadata'))
+    print('**              Completed filling to metadata                         **')
     loop.run_until_complete(cmc_db.fill_to_price(loop, name='new_cmc_price'))
-
+    print('**              Completed filling to price                            **')
+    print('**              Completed updating coin marketcap database            **')
     loop.run_until_complete(cmc_db.change_name(loop))
+    print('************************************************************************')
 
 
 

@@ -44,7 +44,7 @@ def get_price_erc20(token_address: str, chain_index = 0):
         return None
 
 # erc20 token transactions
-def get_transactions_erc20(token_address: str, chain:str=None):
+def get_transactions_erc20(token_address: str, limit: int, chain:str=None):
     url = 'https://deep-index.moralis.io/api/v2/erc20/%s/transfers' %token_address
     def get_next_page(cursor: str):
         if cursor == None:
@@ -60,9 +60,9 @@ def get_transactions_erc20(token_address: str, chain:str=None):
         return response['cursor'], response['result']
 
     cursor, transactions = get_next_page(None)
-    while cursor != None:
+    while cursor != None and len(transactions) < limit:
         cursor, transactions_next = get_next_page(cursor)
-        transactions.append(transactions_next)
+        transactions.extend(transactions_next)
     
     return transactions
 
