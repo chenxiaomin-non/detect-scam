@@ -86,7 +86,7 @@ def get_info_for_validator(token_address: str = None, name: str = None, symbol: 
             loop.run_until_complete(cmc_db.get_price(loop,index=index, id=id))
             database_result.update(jsonify_result(rs.result_bag.get_result(index)[0], 'price'))
         except Exception as e:
-            database_result = {}
+            pass
         return database_result
 
     # step pre-2,3: check if the token is valid bsc/eth token

@@ -90,11 +90,11 @@ def evaluate(data: dict):
 
 
 def validator_for_bsc(data):
-    # if data.get('bsc').get('liquidity') < 1000:
-    #     return {
-    #         'status': 'NOT OK',
-    #         'developer_message': 'liquidity is less than 1000'
-    #     }
+    if data.get('bsc').get('holders') < 1000:
+        return {
+            'status': 'NOT OK',
+            'developer_message': 'holders is less than 1000'
+        }
     if data.get('bsc').get('contract_abi') is None or data.get('bsc').get('contract_abi') == '':
         return {
             'status': 'NOT OK',
@@ -107,11 +107,11 @@ def validator_for_bsc(data):
 
 
 def validator_for_eth(data):
-    # if data.get('eth').get('liquidity') < 1000:
-    #     return {
-    #         'status': 'NOT OK',
-    #         'developer_message': 'liquidity is less than 1000'
-    #     }
+    if data.get('eth').get('holders') < 1000:
+        return {
+            'status': 'NOT OK',
+            'developer_message': 'holders is less than 1000'
+        }
     if data.get('eth').get('contract_abi') is None or data.get('eth').get('contract_abi') == '':
         return {
             'status': 'NOT OK',
