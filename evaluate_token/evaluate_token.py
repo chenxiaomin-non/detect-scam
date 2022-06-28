@@ -88,7 +88,7 @@ def evaluate_token(token_address: str = None, name: str = None, symbol: str = No
         """
         # stage 01: check no value token
         result = validator.evaluate(data)
-        print('result: ', result)
+        print('result 1: ', result)
         if result['status'] != 'OK':
             save_result(result, data)
             return {
@@ -102,7 +102,7 @@ def evaluate_token(token_address: str = None, name: str = None, symbol: str = No
         
         # stage 02: check simple scam token
         result = simple_scan.simple_scam_check(data)
-
+        print('result 2: ', result)
         if result['status'] != 'OK':
             save_result(result, data)
             return {

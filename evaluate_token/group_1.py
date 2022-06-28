@@ -39,11 +39,11 @@ def evaluate(data: dict):
 
     try:
 
-        if data.get('moralis').get('numberTransaction') < 500:
-            return {
-                'status': 'ERROR',
-                'developer_message': 'ERROR - numberTransaction is less than 500'
-            }
+        # if data.get('moralis').get('numberTransaction') < 500:
+        #     return {
+        #         'status': 'ERROR',
+        #         'developer_message': 'ERROR - numberTransaction is less than 500'
+        #     }
 
         if data.get('token_address') is None or data.get('name') is None or data.get('symbol') is None:
             return {
@@ -90,7 +90,7 @@ def evaluate(data: dict):
 
 
 def validator_for_bsc(data):
-    if data.get('bsc').get('holders') < 1000:
+    if data.get('bsc').get('holders') < 100:
         return {
             'status': 'NOT OK',
             'developer_message': 'holders is less than 1000'
@@ -107,7 +107,7 @@ def validator_for_bsc(data):
 
 
 def validator_for_eth(data):
-    if data.get('eth').get('holders') < 1000:
+    if data.get('eth').get('holders') < 100:
         return {
             'status': 'NOT OK',
             'developer_message': 'holders is less than 1000'

@@ -83,12 +83,15 @@ async def is_scam(token_name: str):
 
 
 if __name__ == "__main__":
+    # scheeduler hourly update/backup cmc_metadata/price table
+    from apscheduler.schedulers.blocking import BlockingScheduler
+    sched = BlockingScheduler()
+    print('start scheduler')
+    sched.add_job(backup.update, 'interval', hours=1)
+    sched.start()
+
     import uvicorn
     uvicorn.run(app, host="localhost", port=8000)
 
 
-# scheeduler hourly update/backup cmc_metadata/price table
-from apscheduler.schedulers.blocking import BlockingScheduler
-sched = BlockingScheduler()
-sched.add_job(backup.update, 'interval', hours=1)
-sched.start()
+    
