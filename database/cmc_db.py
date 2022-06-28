@@ -1,4 +1,5 @@
 import coin_marketcap.metadata_api as cmc_api
+import database.result as rs
 import asyncio
 import json
 import aiomysql
@@ -30,11 +31,11 @@ async def get_connection_to_database(loop):
 
     # Connect to the database
     connection = await aiomysql.connect(
-        host=HOST, 
+        host=HOST,
         port=PORT,
-        user=USER, 
-        password=PASSWORD,  
-        loop=loop, 
+        user=USER,
+        password=PASSWORD,
+        loop=loop,
         unix_socket=UNIX_SOCKET
     )
     async with connection.cursor() as cursor:
@@ -50,11 +51,11 @@ async def get_connection_to_database(loop):
 
 async def get_pool_connection(loop):
     pool = await aiomysql.create_pool(
-        host=HOST, 
+        host=HOST,
         port=PORT,
-        user=USER, 
-        password=PASSWORD,  
-        loop=loop, 
+        user=USER,
+        password=PASSWORD,
+        loop=loop,
         unix_socket=UNIX_SOCKET,
         db=DB_IN_USED
     )
@@ -66,11 +67,10 @@ async def get_pool_connection(loop):
 # init database
 
 
-async def cmc_init_database(loop, name=''):
+async def cmc_init_database(loop):
     # Connect to the database
     con = await get_connection_to_database(loop)
-    if name == None:
-        name = ''
+
     # delete the table if it exists
     # create a new ones
     async with con.cursor() as cursor:
@@ -180,10 +180,11 @@ async def fill_to_price(loop, db_name='cmc_price'):
             fully_diluted_market_cap = token['quote']['USD']['fully_diluted_market_cap']
             # Insert the data into the database
             await cursor.execute('''
-                INSERT INTO ''' + db_name + ''' VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)''', 
-                (id, num_market_pair, circulating_supply, total_supply, max_supply, last_updated, date_added,
-                float(usd_price), float(usd_volume_24h), float(percent_change_1h), float(percent_change_24h),
-                float(percent_change_7d), float(market_cap), float(fully_diluted_market_cap),))
+                INSERT INTO ''' + db_name + ''' VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)''',
+                                 (id, num_market_pair, circulating_supply, total_supply, max_supply, last_updated, date_added,
+                                  float(usd_price), float(usd_volume_24h), float(
+                                      percent_change_1h), float(percent_change_24h),
+                                     float(percent_change_7d), float(market_cap), float(fully_diluted_market_cap),))
             await con.commit()
     pool.close()
     await pool.wait_closed()
@@ -192,8 +193,7 @@ async def fill_to_price(loop, db_name='cmc_price'):
 # return something based on the params
 
 
-async def get_metadata(loop, id=None, token_address: str = None, name: str = None, symbol: str = None):
-    global result
+async def get_metadata(loop, index: int, id=None, token_address: str = None, name: str = None, symbol: str = None):
     con = await get_connection_to_database(loop)
     async with con.cursor() as cursor:
         if id is not None:
@@ -212,19 +212,20 @@ async def get_metadata(loop, id=None, token_address: str = None, name: str = Non
             await cursor.execute('''
                 SELECT * FROM cmc_metadata''')
         result = await cursor.fetchall()
+        rs.result_bag.update_result(index, result)
         await con.commit()
     con.close()
 
 
 # run SELECT query on the database
 # return price of the token based on id
-async def get_price(loop, id: str):
-    global result
+async def get_price(loop, index: int, id: str):
     con = await get_connection_to_database(loop)
     async with con.cursor() as cursor:
         await cursor.execute('''
             SELECT * FROM cmc_price WHERE id = %s''', (id,))
         result = await cursor.fetchall()
+        rs.result_bag.update_result(index, result)
         await con.commit()
     con.close()
 
@@ -245,6 +246,8 @@ async def change_name(loop):
     con = get_connection_to_database(loop)
     async with con.cursor() as cursor:
         await cursor.execute('''
+            DROP TABLE IF EXISTS backup_cmc_metadata;
+            DROP TABLE IF EXISTS backup_cmc_price;
             ALTER TABLE cmc_metadata RENAME TO backup_cmc_metadata;
             ALTER TABLE new_cmc_metadata RENAME TO cmc_metadata;
             ALTER TABLE cmc_price RENAME TO backup_cmc_price;
@@ -253,7 +256,8 @@ async def change_name(loop):
         await con.commit()
     con.close()
 
-async def update_init():
+
+async def update_init(loop):
     con = get_connection_to_database(loop)
     async with con.cursor() as cursor:
         await cursor.execute('''
@@ -261,6 +265,7 @@ async def update_init():
         CREATE TABLE new_cmc_price LIKE cmc_price;''')
         await con.commit()
     con.close()
+
 
 async def backup(loop, db: list):
     con = get_connection_to_database(loop)

@@ -3,6 +3,7 @@ import evaluate_token.evaluate_token as evaluate_token
 import json
 from fastapi import FastAPI
 import sys
+import backup_db.init_script as backup
 sys.path.append('./')
 
 app = FastAPI()
@@ -40,7 +41,14 @@ async def is_scam(token_address: str):
     #
 
     # get the result from evaluate_token
-    result = evaluate_token.evaluate_token(token_address)
+    try:
+        result = evaluate_token.evaluate_token(token_address)
+    except Exception:
+        return json.dumps({
+            "status": "ERR",
+            "developer_message": "Error when evaluating token",
+            "result": []
+        }, indent=4)
 
 
     #
@@ -56,7 +64,11 @@ async def is_scam(token_address: str):
 
 @app.get('/name/{token_name}')
 async def is_scam(token_name: str):
-
+    for i in range(len(token_name)):
+        if token_name[i] in '!#$&?':
+            return json.dumps({ 
+                "status": "ERR",
+                "result": {}})
     #
     # this code will process the data
     #
@@ -69,27 +81,14 @@ async def is_scam(token_name: str):
         }, indent=4)
 
 
-@app.get('/symbol/{symbol}')
-async def is_scam(symbol: str):
-    if validate_input(symbol) == False:
-        return json.dumps({
-            "status": "ERR",
-            "result": []
-        }, indent=4)
-    #
-    # this code will process the data
-    #
-
-    return json.dumps({
-        "status": "OK",
-        "result": {
-            "token_address": "0x1234567890123456789012345678901234567890",
-            "token_name": "Bitcoin",
-            "symbol": "BTC",
-            "category": "an OK token",
-            "possibility": 20
-        }}, indent=4)
 
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="localhost", port=8000)
+
+
+# scheeduler hourly update/backup cmc_metadata/price table
+from apscheduler.schedulers.blocking import BlockingScheduler
+sched = BlockingScheduler()
+sched.add_job(backup.update, 'interval', hours=1)
+sched.start()

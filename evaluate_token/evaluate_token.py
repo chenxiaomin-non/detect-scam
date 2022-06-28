@@ -2,6 +2,7 @@ import sys
 sys.path.append('./')
 import database.total_token as total_token
 import evaluate_token.group_1 as validator
+import evaluate_token.group_2 as simple_scan
 import get_info_interface as get_info
 
 def get_latest_result(token_address: str = None, name: str = None, symbol: str = None):
@@ -98,20 +99,27 @@ def evaluate_token(token_address: str = None, name: str = None, symbol: str = No
                 'possibility': 100
             }
         
-        else:
+        
+        # stage 02: check simple scam token
+        result = simple_scan.simple_scam_check(data)
+
+        if result['status'] != 'OK':
             save_result(result, data)
             return {
                 'token_name': data['name'],
                 'token_address': data['token_address'],
                 'symbol': data['symbol'],
-                'category': 'an OK token',
-                'possibility': 0
+                'category': 'simple scam token',
+                'possibility': 100
             }
-        # stage 02: check simple scam token
-
-        """
-        there will be some code here in future
-        """
+        save_result(result, data)
+        return {
+            'token_name': data['name'],
+            'token_address': data['token_address'],
+            'symbol': data['symbol'],
+            'category': 'an OK token',
+            'possibility': 0
+        }
 
         # stage 03: check complex scam token
         

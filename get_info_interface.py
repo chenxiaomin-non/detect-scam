@@ -7,6 +7,7 @@ import get_info_api.moralis as moralis
 import coin_marketcap.metadata_api as cmc_api
 import database.cmc_db as cmc_db
 import database.total_token as total_token
+import database.result as rs
 import sys
 sys.path.append('./')
 
@@ -30,6 +31,8 @@ MORALIS_FIELDS = ['chain', 'name', 'symbol', 'decimal',
 
 MODE = ['metadata', 'price', 'bsc', 'eth',
         'more_info', 'moralis', 'transaction']
+
+
 
 # return the result by the dict/json format
 
@@ -70,16 +73,18 @@ def get_info_for_validator(token_address: str = None, name: str = None, symbol: 
     # step 1: find in database-coinmarketcap
     def find_in_database(token_address: str = None, name: str = None, symbol: str = None):
         loop = cmc_db.loop
+
+        index = rs.result_bag.get_index()
         loop.run_until_complete(cmc_db.get_metadata(
-            loop, token_address=token_address, name=name, symbol=symbol))
+            loop,index=index, token_address=token_address, name=name, symbol=symbol))
         
         try:
-            database_result = jsonify_result(cmc_db.get_result()[0], 'metadata')
+            database_result = jsonify_result(rs.result_bag.get_result(index)[0], 'metadata')
             id = database_result['id']
-            cmc_db.clear_result()
-            loop.run_until_complete(cmc_db.get_price(loop, id))
-            database_result.update(jsonify_result(cmc_db.get_result()[0], 'price'))
-            cmc_db.clear_result()
+            
+            index = rs.result_bag.get_index()
+            loop.run_until_complete(cmc_db.get_price(loop,index=index, id=id))
+            database_result.update(jsonify_result(rs.result_bag.get_result(index)[0], 'price'))
         except Exception as e:
             database_result = {}
         return database_result
